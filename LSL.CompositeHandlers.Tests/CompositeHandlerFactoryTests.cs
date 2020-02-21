@@ -57,7 +57,7 @@ namespace LSL.CompositeHandlers.Tests
             return string.Join(" => ", recorder);
         }
 
-        private IEnumerable<Func<string, Func<bool>, bool>> BuildHandlers(string pipelineDefinitions, IList<string> recorder)
+        private IEnumerable<HandlerDelegate<string, bool>> BuildHandlers(string pipelineDefinitions, IList<string> recorder)
         {
             return pipelineDefinitions
                 .Split('|')
@@ -68,7 +68,7 @@ namespace LSL.CompositeHandlers.Tests
                     CallNext = pd.IndexOf("callNext", StringComparison.InvariantCultureIgnoreCase) > -1,
                     Execute = pd.IndexOf("execute", StringComparison.InvariantCultureIgnoreCase) > -1
                 })
-                .Select((h, i) => new Func<string, Func<bool>, bool>((s, next) =>
+                .Select((h, i) => new HandlerDelegate<string, bool>((s, next) =>
                 {
                     var stageRecording = (i + 1).ToString();
                     if (h.Execute)
