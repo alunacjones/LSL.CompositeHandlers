@@ -6,7 +6,7 @@ namespace LSL.CompositeHandlers
     public interface ICompositeHandlerFactory
     {
         Func<TContext, TResult> Create<TContext, TResult>(
-            IEnumerable<Func<TContext, Func<TResult>, TResult>> handlers,
+            IEnumerable<HandlerDelegate<TContext, TResult>> handlers,
             Action<IConfigurationBuilder<TContext, TResult>> configurator = null);
-    }
+    }    
 }
