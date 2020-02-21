@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="CompositeHandlerFactory.cs" />
     <Compile Include="ConfigurationBuilder.cs" />
+    <Compile Include="HandlerDelegate.cs" />
     <Compile Include="ICompositeHandlerFactory.cs" />
     <Compile Include="IConfigurationBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
