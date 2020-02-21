@@ -2,5 +2,5 @@ using System;
 
 namespace LSL.CompositeHandlers 
 {
-    public delegate TResult HandlerDelegate<TContext, TResult>(TContext context, Func<TResult> next);
+    public delegate TResult HandlerDelegate<out TContext, in TResult>(TContext context, Func<TResult> next);
 }
