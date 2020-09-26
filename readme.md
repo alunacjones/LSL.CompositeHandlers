@@ -5,3 +5,18 @@
 # LSL.CompositeHandlers
 
 A factory for building a compound function using "next" semantics similar to node.js express middleware.
+
+## Quick Start
+
+```csharp
+var factory = new CompositeHandlerFactory();
+var handler = factory.Create(new HandlerDelegate<int, string>[] { 
+    (context, next) => context == 2 ? "We stop on the number 2" : next(),
+    (context, next) => context < 10 ? $"Doubled value {context * 2}": next()
+},
+cfg => cfg.WithDefaultHandler(context => $"Reached the end with {context}"));
+
+Console.WriteLine(handler(1)); // Returns "Doubled value 2" 
+Console.WriteLine(handler(2)); // Returns "We stop on the number 2"
+Console.WriteLine(handler(12)); // Returns "Reached the end with 12"
+```
