@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using NUnit.Framework;
-using LSL.CompositeHandlers;
 
 namespace LSL.CompositeHandlers.Tests
 {
@@ -53,6 +52,7 @@ namespace LSL.CompositeHandlers.Tests
                 .Should()
                 .Be(expectedExecution);
         }
+
         private string MapRecording(List<string> recorder)
         {
             return string.Join(" => ", recorder);

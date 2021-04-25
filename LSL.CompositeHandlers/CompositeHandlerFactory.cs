@@ -4,9 +4,11 @@ using System.Linq;
 
 namespace LSL.CompositeHandlers
 {
+    /// <inheritdoc/>
     public class CompositeHandlerFactory : ICompositeHandlerFactory
     {
-        public Func<TContext, TResult> Create<TContext, TResult>(
+        /// <inheritdoc/>
+        public BuildCompositeHandlerResult<TContext, TResult> CreateCompositeHandler<TContext, TResult>(
             IEnumerable<HandlerDelegate<TContext, TResult>> handlers,
             Action<IConfigurationBuilder<TContext, TResult>> configurator = null)
         {
@@ -14,12 +16,14 @@ namespace LSL.CompositeHandlers
 
             configurator?.Invoke(configuration);
 
-            return handlers
-                .Reverse()
-                .Aggregate(
-                    configuration.DefaultHandler ?? (_ => default(TResult)),
-                    (compositeFunction, currentFn) => context => currentFn(context, () => compositeFunction(context))
-                );
+            return new BuildCompositeHandlerResult<TContext, TResult>(
+                handlers
+                    .Reverse()
+                    .Aggregate(
+                        configuration.DefaultHandler ?? (_ => default(TResult)),
+                        (compositeFunction, currentFn) => context => currentFn(context, () => compositeFunction(context))
+                    )
+            );
         }
     }
 }
