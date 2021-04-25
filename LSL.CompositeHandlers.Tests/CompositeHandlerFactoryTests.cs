@@ -53,6 +53,18 @@ namespace LSL.CompositeHandlers.Tests
                 .Be(expectedExecution);
         }
 
+        [TestCase("first", 12)]
+        [TestCase("second", 24)]
+        [TestCase("other", 0)]
+        public void GivenASetOfGenericHandlers_ItShouldReturnThExpectedResult(string input, int expectedResult)
+        {
+            BuildSut().Create(
+                For.GenericHandlers(new IGenericHandler<string, int>[] { new GenericHandler1(), new GenericHandler2() })
+            )(input)
+            .Should()
+            .Be(expectedResult);
+        }
+
         private string MapRecording(List<string> recorder)
         {
             return string.Join(" => ", recorder);
@@ -82,6 +94,32 @@ namespace LSL.CompositeHandlers.Tests
                     return !h.CallNext || next();
                 }))
                 .ToList();
+        }
+
+        private class GenericHandler1 : IGenericHandler<string, int>
+        {
+            public int Handle(string context, Func<int> next)
+            {
+                if (context == "first") 
+                {
+                    return 12;
+                }
+
+                return next();
+            }
+        }
+
+        private class GenericHandler2 : IGenericHandler<string, int>
+        {
+            public int Handle(string context, Func<int> next)
+            {
+                if (context == "second")
+                {
+                    return 24;
+                }
+
+                return next();
+            }
         }
     }
 }
