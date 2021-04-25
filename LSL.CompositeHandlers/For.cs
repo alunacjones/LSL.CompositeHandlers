@@ -4,7 +4,7 @@ using System.Linq;
 namespace LSL.CompositeHandlers
 {
     /// <summary>
-    /// Static helper class to allow passing in <see cref="IGenericHandler{TContext, TResult}"/> instances to any methods that require an <see cref="IEnumerable{HandlerDelegate{TContext, TResult}}" />
+    /// Static helper class to for simple conversions to <see cref="System.Collections.Generic.IEnumerable{ LSL.CompositeHandlers.HandlerDelegate{ TContext, TResult } }" />
     /// </summary>
     public static class For
     {
