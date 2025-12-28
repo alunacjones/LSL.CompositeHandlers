@@ -20,9 +20,12 @@ namespace LSL.CompositeHandlers
                     .Reverse()
                     .Aggregate(
                         configuration.DefaultHandler ?? (_ => Task.FromResult(default(TResult))),
-                        (compositeFunction, currentFn) => async context => await currentFn(context, async () => await compositeFunction(context))
+                        (compositeFunction, currentFn) => async context => await currentFn(
+                            context, 
+                            async () => await compositeFunction(context).ConfigureAwait(false))
+                            .ConfigureAwait(false)
                     )
-            );            
+                );            
         }
 
         /// <inheritdoc/>
@@ -43,7 +46,7 @@ namespace LSL.CompositeHandlers
                 handlers
                     .Reverse()
                     .Aggregate(
-                        configuration.DefaultHandler ?? (_ => default(TResult)),
+                        configuration.DefaultHandler ?? (_ => default),
                         (compositeFunction, currentFn) => context => currentFn(context, () => compositeFunction(context))
                     )
             );
