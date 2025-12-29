@@ -2,16 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
+using LSL.ExecuteIf;
 using NUnit.Framework;
 
 namespace LSL.CompositeHandlers.Tests
 {
     public class CompositeHandlerFactoryTests
     {
-        private CompositeHandlerFactory BuildSut()
-        {
-            return new CompositeHandlerFactory();
-        }
+        private static CompositeHandlerFactory BuildSut() => new();
 
         [TestCase("", "execute callNext | callNext | donothing", "1 (executed) => 2 => 3")]
         [TestCase("", "execute | callNext | donothing", "1 (executed)")]
@@ -36,6 +34,40 @@ namespace LSL.CompositeHandlers.Tests
                 .Be(expectedExecution);
         }
 
+        [TestCase(false, "execute callNext | callNext | donothing", "1 (executed) => 2 => 3", true)]
+        [TestCase(false, "execute | callNext | donothing", "1 (executed)", true)]
+        [TestCase(false, "callNext | callNext | execute callNext", "1 => 2 => 3 (executed)", false)]
+        [TestCase(false, "donothing | callNext | execute callNext", "1", true)]
+        [TestCase(false, "callNext | execute | execute", "1 => 2 (executed)", true)]
+        [TestCase(false, "callNext | execute callNext | donothing", "1 => 2 (executed) => 3", true)]
+
+        [TestCase(true, "execute callNext | callNext | donothing", "1 (executed) => 2 => 3", true)]
+        [TestCase(true, "execute | callNext | donothing", "1 (executed)", true)]
+        [TestCase(true, "callNext | callNext | execute callNext", "1 => 2 => 3 (executed)", true)]
+        [TestCase(true, "donothing | callNext | execute callNext", "1", true)]
+        [TestCase(true, "callNext | execute | execute", "1 => 2 (executed)", true)]
+        [TestCase(true, "callNext | execute callNext | donothing", "1 => 2 (executed) => 3", true)]
+        public void Contextual_GivenASetOfHandlersAndADefaultHandlerThatReturnsTrue_ItShouldFollowTheExpectedPipeline(
+            bool useDefaultHandler,
+            string pipelineDefinition,
+            string expectedExecution,
+            bool expectedResult)
+        {
+            var recorder = new List<string>();
+
+            BuildSut()
+                .CreateCompositeHandler(
+                    BuildContextualHandlers(pipelineDefinition, recorder),
+                    cfg => cfg.ExecuteIf(useDefaultHandler, c => c.WithDefaultHandler(_ => true))
+                ).Handler("context")
+                .Should()
+                .Be(expectedResult);
+
+            MapRecording(recorder)
+                .Should()
+                .Be(expectedExecution);
+        }        
+
         [TestCase("", "callNext | callNext | execute callNext", "1 => 2 => 3 (executed)")]
         public void GivenASetOfHandlersAndNoDefaultHandlerThatReturnsTrue_ItShouldFollowTheExpectedPipeline(string dummy, string pipelineDefinition, string expectedExecution)
         {
@@ -59,7 +91,7 @@ namespace LSL.CompositeHandlers.Tests
         public void GivenASetOfGenericHandlers_ItShouldReturnThExpectedResult(string input, int expectedResult)
         {
             BuildSut().Create(
-                For.GenericHandlers(new IGenericHandler<string, int>[] { new GenericHandler1(), new GenericHandler2() })
+                For.GenericHandlers([new GenericHandler1(), new GenericHandler2()])
             )(input)
             .Should()
             .Be(expectedResult);
@@ -70,17 +102,8 @@ namespace LSL.CompositeHandlers.Tests
             return string.Join(" => ", recorder);
         }
 
-        private IEnumerable<HandlerDelegate<string, bool>> BuildHandlers(string pipelineDefinitions, IList<string> recorder)
-        {
-            return pipelineDefinitions
-                .Split('|')
-                .Select(pd => pd.Trim())
-                .Where(pd => !string.IsNullOrEmpty(pd))
-                .Select(pd => new
-                {
-                    CallNext = pd.IndexOf("callNext", StringComparison.InvariantCultureIgnoreCase) > -1,
-                    Execute = pd.IndexOf("execute", StringComparison.InvariantCultureIgnoreCase) > -1
-                })
+        private static IEnumerable<HandlerDelegate<string, bool>> BuildHandlers(string pipelineDefinitions, IList<string> recorder) => 
+            [.. BuildPipeline(pipelineDefinitions)
                 .Select((h, i) => new HandlerDelegate<string, bool>((s, next) =>
                 {
                     var stageRecording = (i + 1).ToString();
@@ -92,9 +115,34 @@ namespace LSL.CompositeHandlers.Tests
                     recorder.Add(stageRecording);
 
                     return !h.CallNext || next();
-                }))
-                .ToList();
-        }
+                }))];
+
+        private static IEnumerable<PipelineDefinition> BuildPipeline(string pipelineDefinitions) => 
+            pipelineDefinitions
+                .Split('|')
+                .Select(pd => pd.Trim())
+                .Where(pd => !string.IsNullOrEmpty(pd))
+                .Select(pd => new PipelineDefinition(
+                    pd.IndexOf("callNext", StringComparison.InvariantCultureIgnoreCase) > -1,
+                    pd.IndexOf("execute", StringComparison.InvariantCultureIgnoreCase) > -1
+                ));
+
+        public record PipelineDefinition(bool CallNext, bool Execute);
+
+        private static IEnumerable<ContextualHandlerDelegate<string, bool>> BuildContextualHandlers(string pipelineDefinitions, IList<string> recorder) =>
+            [.. BuildPipeline(pipelineDefinitions)
+                .Select((h, i) => new ContextualHandlerDelegate<string, bool>((s, next) =>
+                {
+                    var stageRecording = (i + 1).ToString();
+                    if (h.Execute)
+                    {
+                        stageRecording += " (executed)";
+                    }
+
+                    recorder.Add(stageRecording);
+
+                    return !h.CallNext || next(s);
+                }))];
 
         private class GenericHandler1 : IGenericHandler<string, int>
         {
