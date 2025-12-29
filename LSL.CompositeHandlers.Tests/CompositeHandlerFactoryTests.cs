@@ -3,14 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using LSL.ExecuteIf;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
 namespace LSL.CompositeHandlers.Tests
 {
     public class CompositeHandlerFactoryTests
     {
-        private static CompositeHandlerFactory BuildSut() => new();
-
+        private static ICompositeHandlerFactory BuildSut() => new CompositeHandlerFactory();
+        private static ICompositeHandlerFactory BuildSutFromServiceProvider() =>
+            new ServiceCollection()
+                .AddCompositeHandlerServices()
+                .BuildServiceProvider()
+                .GetRequiredService<ICompositeHandlerFactory>();
+                
         [TestCase("", "execute callNext | callNext | donothing", "1 (executed) => 2 => 3")]
         [TestCase("", "execute | callNext | donothing", "1 (executed)")]
         [TestCase("", "callNext | callNext | execute callNext", "1 => 2 => 3 (executed)")]
@@ -55,8 +61,8 @@ namespace LSL.CompositeHandlers.Tests
         {
             var recorder = new List<string>();
 
-            BuildSut()
-                .CreateCompositeHandler(
+            BuildSutFromServiceProvider()
+                .CreateContextualCompositeHandler(
                     BuildContextualHandlers(pipelineDefinition, recorder),
                     cfg => cfg.ExecuteIf(useDefaultHandler, c => c.WithDefaultHandler(_ => true))
                 ).Handler("context")
